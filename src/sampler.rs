@@ -22,18 +22,16 @@ impl Sampler {
         let grid_isize = grid_size as isize;
         let norm_factor = DEFAULT_R_BOUND as f64 / (grid_size as f64 / 2.0 - 1.0);
         for i in 0..grid_isize {
-            let z = (grid_isize / 2 - i) as f64 * norm_factor;
+            let z = ((grid_isize - 1) / 2 - i) as f64 * norm_factor;
             let mut row_probs = Vec::new();
+            //print!("{}\n",z);
             for j in 0..grid_isize {
-                let x = (j - grid_isize / 2) as f64 * norm_factor;
+                let x = (j - (grid_isize - 1) / 2) as f64 * norm_factor;
 
                 let r = (x * x + z * z).sqrt();
                 //let theta = if z != 0.0 {(x/z).atan()} else {0.0};
-                let theta = if (j - grid_isize / 2) == 0 || (grid_isize / 2 - i) == 0 {
-                    0.0
-                } else {
-                    (z / r).acos()
-                };
+                let theta = if r == 0.0 { 0.0 } else { (z / r).acos() };
+
                 let mut prob = orbital.probability(r, theta, ZERO_PHI_PLANE, delta_volume);
 
                 prob = 1.0 - (1.0 - prob).powf(sample_amount as f64);
