@@ -1,5 +1,3 @@
-//extern crate num;
-
 use num_integer::Integer;
 
 
