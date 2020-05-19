@@ -3,9 +3,7 @@ use sphrs::{ComplexSHType, Coordinates, SHEval};
 use num_complex::Complex64;
 use std::f64::consts;
 
-const FRAC_1_REDUCED_BOHR_RADIUS_ATTO:f64 = 1.888697507170487e-8;
-const FRAC_1_REDUCED_BOHR_RADIUS_CUBED_ATTO:f64 = 6.737320712965956e-24;
-pub const REDUCED_BOHR_RADIUS_ATTO:u64 = 52_946_541;
+pub const REDUCED_BOHR_RADIUS_ANG:f64 = 0.5291772;
 
 pub struct Orbital{
     n:u64,
@@ -24,11 +22,9 @@ impl Orbital{
         }).collect();
     
         let root_term = (
-            FRAC_1_REDUCED_BOHR_RADIUS_CUBED_ATTO
-            *
             (8 * facts[(n-l-1) as usize]) as f64
             /
-            (n*n*n*n * 2 * facts[(n+l) as usize]) as f64
+            ((n*n*n*n * 2 * facts[(n+l) as usize]) as f64 * REDUCED_BOHR_RADIUS_ANG*REDUCED_BOHR_RADIUS_ANG*REDUCED_BOHR_RADIUS_ANG)
         ).sqrt();
     
         let laguerre = laguerre::Laguerre::new(n-l-1, 2*l+1);
@@ -41,7 +37,7 @@ impl Orbital{
     }
 
     pub fn psi(&self,r:f64, theta:f64, phi:f64) -> Complex64{
-        let rho = (r * 2.0 / self.n as f64) * FRAC_1_REDUCED_BOHR_RADIUS_ATTO;
+        let rho = r * 2.0 / (self.n as f64 * REDUCED_BOHR_RADIUS_ANG);
         let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, theta, phi);
 
         Complex64::new(
