@@ -1,9 +1,10 @@
+
 use crate::laguerre;
 use sphrs::{ComplexSHType, Coordinates, SHEval};
 use num_complex::Complex64;
 use std::f64::consts;
 
-pub const REDUCED_BOHR_RADIUS_ANG:f64 = 0.5291772;
+pub const REDUCED_BOHR_RADIUS:f64 = 5.294651e-11;
 
 pub struct Orbital{
     n:u64,
@@ -24,7 +25,7 @@ impl Orbital{
         let root_term = (
             (8 * facts[(n-l-1) as usize]) as f64
             /
-            ((n*n*n*n * 2 * facts[(n+l) as usize]) as f64 * REDUCED_BOHR_RADIUS_ANG*REDUCED_BOHR_RADIUS_ANG*REDUCED_BOHR_RADIUS_ANG)
+            ((n*n*n*n * 2 * facts[(n+l) as usize]) as f64 * REDUCED_BOHR_RADIUS*REDUCED_BOHR_RADIUS*REDUCED_BOHR_RADIUS)
         ).sqrt();
     
         let laguerre = laguerre::Laguerre::new(n-l-1, 2*l+1);
@@ -37,7 +38,7 @@ impl Orbital{
     }
 
     pub fn psi(&self,r:f64, theta:f64, phi:f64) -> Complex64{
-        let rho = r * 2.0 / (self.n as f64 * REDUCED_BOHR_RADIUS_ANG);
+        let rho = r * 2.0 / (self.n as f64 * REDUCED_BOHR_RADIUS);
         let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, theta, phi);
 
         Complex64::new(
@@ -51,7 +52,7 @@ impl Orbital{
         ComplexSHType::Spherical.eval(self.l as i64,self.m as i64,&unit_sphere)
     }
 
-    pub fn probability(&self,r:f64, theta:f64, phi:f64) -> f64 {
-        self.psi(r,theta,phi).norm_sqr() * (r * r) * theta.sin()
+    pub fn probability(&self,r:f64, theta:f64, phi:f64, delta_V:f64) -> f64 {
+        self.psi(r,theta,phi).norm_sqr() * delta_V
     }
 }
