@@ -6,7 +6,7 @@ use rayon::prelude::*;
 
 const ZERO_PHI_PLANE: f64 = 0.0;
 const R_BOUND_MAX: f64 = 40e-10; // 40 angstrom
-const PROB_THRESHOLD: f64 = 0.8;
+const PROB_THRESHOLD: f64 = 0.08;
 pub struct Sampler {
     grid: Vec<Vec<bool>>,
     probs: Vec<Vec<f64>>,
@@ -59,7 +59,7 @@ impl Sampler {
         }
     }
 
-    // Find the maximum r_bound value so that we can see the entire orbital shape at a reasonable scale. 
+    // Find the maximum r_bound value so that we can see the entire orbital shape at a reasonable scale.
     // Instead of a zoomed-in sub picture or a lot of empty space
     fn discover_r_bound(
         grid_size: isize,
@@ -90,7 +90,7 @@ impl Sampler {
             }
         }
 
-        // At the current R_BOUND_MAX scale, the edges have a very low probability. We progress 
+        // At the current R_BOUND_MAX scale, the edges have a very low probability. We progress
         // from the edges to the centre to find the first row and column such that the average
         // probability is greater than PROB_THRESHOLD
         let row_bound: f64;
@@ -121,7 +121,7 @@ impl Sampler {
             return Err("Max R bound is too small");
         }
 
-        // Some of the orbitals are wider, some of them are taller. We need to fit according to the 
+        // Some of the orbitals are wider, some of them are taller. We need to fit according to the
         // longest axis
         Ok(if row_bound > col_bound {
             row_bound

@@ -60,7 +60,7 @@ impl Orbital {
         ) * ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere)
     }
 
-    // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by 
+    // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by
     // the volume to get the probability to detect an electron in that region
     pub fn probability(&self, r: f64, theta: f64, phi: f64, delta_volume: f64) -> f64 {
         self.psi(r, theta, phi).norm_sqr() * delta_volume
