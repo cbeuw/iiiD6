@@ -16,7 +16,9 @@ pub struct Orbital {
 }
 
 impl Orbital {
+    // wavefunction as given in https://en.wikipedia.org/wiki/Hydrogen_atom#Wavefunction
     pub fn new(n: u64, l: u64, m: i64) -> Self {
+        // precompute all factorials up to n+l (which is the largest factorial we need)
         let facts: Vec<_> = (0..=n + l)
             .scan(1, |prod, x| {
                 *prod = *prod * if x == 0 { 1 } else { x };
@@ -24,6 +26,7 @@ impl Orbital {
             })
             .collect();
 
+        // some terms do not require any of r, theta or phi, so we precompute them here
         let root_term = ((8 * facts[(n - l - 1) as usize]) as f64
             / ((n * n * n * n * 2 * facts[(n + l) as usize]) as f64
                 * REDUCED_BOHR_RADIUS
@@ -57,6 +60,8 @@ impl Orbital {
         ) * ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere)
     }
 
+    // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by 
+    // the volume to get the probability to detect an electron in that region
     pub fn probability(&self, r: f64, theta: f64, phi: f64, delta_volume: f64) -> f64 {
         self.psi(r, theta, phi).norm_sqr() * delta_volume
     }
