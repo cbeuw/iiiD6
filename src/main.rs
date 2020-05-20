@@ -7,7 +7,7 @@ use sampler::Sampler;
 use std::env;
 
 const IMG_SIZE: usize = 4096;
-const ITERS: u64 = 4000000000;
+const ITERS: u64 = 6_000_000_000;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -24,8 +24,6 @@ fn main() {
     if m < -(l as i64) || m > l as i64 {
         panic!("l must be in range [-l,l]");
     }
-
-    //println!("n:{},l:{},m:{}",n,l,m);
 
     let container = vec![0; 3 * IMG_SIZE * IMG_SIZE];
     let mut image =
@@ -45,5 +43,5 @@ fn main() {
         }
     }
 
-    image.save("render.png").unwrap();
+    image.save(format!("{}{}{}.png",n,l,m)).unwrap();
 }
