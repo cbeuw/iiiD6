@@ -71,25 +71,32 @@ impl Sampler {
         let delta_volume = (R_BOUND_MAX / (grid_size as f64 / 2.0 - 1.0)).powi(3);
         let norm_factor = R_BOUND_MAX as f64 / (grid_size as f64 / 2.0 - 1.0);
 
-        let mut row_cum = vec![0.0; grid_size as usize];
-        let mut col_cum = vec![0.0; grid_size as usize];
+        let mut probs = vec![vec![0.0; grid_size as usize]; grid_size as usize];
         // ith row
-        for i in 0..grid_size {
-            let z = ((grid_size - 1) / 2 - i) as f64 * norm_factor;
+        probs.par_iter_mut().enumerate().for_each(|(i, row_probs)| {
+            let z = ((grid_size - 1) / 2 - i as isize) as f64 * norm_factor;
             // jth column
-            for j in 0..grid_size {
-                let x = (j - (grid_size - 1) / 2) as f64 * norm_factor;
+            row_probs.iter_mut().enumerate().for_each(|(j, prob)| {
+                let x = (j as isize - (grid_size - 1) / 2) as f64 * norm_factor;
                 let (r, theta, _) = Self::spherical(x, 0.0, z);
 
-                let mut prob = orbital.probability(r, theta, ZERO_PHI_PLANE, delta_volume);
+                let mut p = orbital.probability(r, theta, ZERO_PHI_PLANE, delta_volume);
 
-                prob = 1.0 - (1.0 - prob).powf(sample_amount as f64);
+                p = 1.0 - (1.0 - p).powf(sample_amount as f64);
 
-                row_cum[i as usize] += prob;
-                col_cum[j as usize] += prob;
-            }
-        }
+                *prob = p;
+            });
+        });
 
+        let row_cum = probs.iter().fold(Vec::new(),|mut acc:Vec<f64>, row:&Vec<f64>|{
+            acc.push(row.into_iter().sum());
+            acc
+        });
+
+        let col_cum = probs.iter().fold(probs[0].clone(), |acc, row|{
+            let zipped = acc.into_iter().zip(row);
+            zipped.map(|(a,b)| a+b).collect()
+        });
         // At the current R_BOUND_MAX scale, the edges have a very low probability. We progress
         // from the edges to the centre to find the first row and column such that the average
         // probability is greater than PROB_THRESHOLD
