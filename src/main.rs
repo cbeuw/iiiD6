@@ -7,7 +7,7 @@ use sampler::Sampler;
 use std::env;
 
 const IMG_SIZE: usize = 4096;
-const ITERS: u64 = 6_000_000_000;
+const ITERS: u64 = 12_000_000_000;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
