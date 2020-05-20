@@ -2,12 +2,13 @@ mod laguerre;
 mod orbital;
 mod sampler;
 
-use image::{ImageBuffer, Rgb};
+use image::{ImageBuffer, Rgb, imageops, FilterType};
 use sampler::Sampler;
 use std::env;
 
-const IMG_SIZE: usize = 4096;
-const ITERS: u64 = 12_000_000_000;
+const IMG_SIZE: usize = 2048;
+const SAMPLING_SIZE: usize = IMG_SIZE * 4;
+const ITERS: u64 = 64_000_000_000;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -25,11 +26,11 @@ fn main() {
         panic!("l must be in range [-l,l]");
     }
 
-    let container = vec![0; 3 * IMG_SIZE * IMG_SIZE];
+    let container = vec![0; 3 * SAMPLING_SIZE * SAMPLING_SIZE];
     let mut image =
-        ImageBuffer::<Rgb<u8>, _>::from_raw(IMG_SIZE as u32, IMG_SIZE as u32, container).unwrap();
+        ImageBuffer::<Rgb<u8>, _>::from_raw(SAMPLING_SIZE as u32, SAMPLING_SIZE as u32, container).unwrap();
 
-    let mut sampler = Sampler::new(n, l, m, IMG_SIZE, ITERS);
+    let mut sampler = Sampler::new(n, l, m, SAMPLING_SIZE, ITERS);
     let grid = sampler.sample();
 
     let blue = Rgb([83, 202, 236]);
@@ -43,5 +44,7 @@ fn main() {
         }
     }
 
+    image = imageops::resize(&image, IMG_SIZE as u32, IMG_SIZE as u32, FilterType::Gaussian);
     image.save(format!("{}{}{}.png",n,l,m)).unwrap();
+
 }
