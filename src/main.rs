@@ -2,8 +2,7 @@ mod laguerre;
 mod orbital;
 mod sampler;
 
-use image::{ImageBuffer, Rgb, imageops, FilterType};
-use sampler::Sampler;
+use image::{imageops, FilterType, ImageBuffer, Rgb};
 use std::env;
 
 const IMG_SIZE: usize = 2048;
@@ -28,10 +27,10 @@ fn main() {
 
     let container = vec![0; 3 * SAMPLING_SIZE * SAMPLING_SIZE];
     let mut image =
-        ImageBuffer::<Rgb<u8>, _>::from_raw(SAMPLING_SIZE as u32, SAMPLING_SIZE as u32, container).unwrap();
+        ImageBuffer::<Rgb<u8>, _>::from_raw(SAMPLING_SIZE as u32, SAMPLING_SIZE as u32, container)
+            .unwrap();
 
-    let mut sampler = Sampler::new(n, l, m, SAMPLING_SIZE, ITERS);
-    let grid = sampler.sample();
+    let grid = sampler::sample(n, l, m, SAMPLING_SIZE, ITERS);
 
     let blue = Rgb([83, 202, 236]);
     let black = Rgb([0, 0, 0]);
@@ -44,7 +43,11 @@ fn main() {
         }
     }
 
-    image = imageops::resize(&image, IMG_SIZE as u32, IMG_SIZE as u32, FilterType::Gaussian);
-    image.save(format!("{}{}{}.png",n,l,m)).unwrap();
-
+    image = imageops::resize(
+        &image,
+        IMG_SIZE as u32,
+        IMG_SIZE as u32,
+        FilterType::Gaussian,
+    );
+    image.save(format!("{}{}{}.png", n, l, m)).unwrap();
 }
