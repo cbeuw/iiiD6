@@ -39,7 +39,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize, sample_amount: u64) -> V
             // actually sampling sample_amount of them, which is very large.
             p = 1.0 - (1.0 - p).powf(sample_amount as f64);
 
-            *hit |= rng.gen_bool(p);
+            *hit = rng.gen_bool(p);
         });
     });
     grid

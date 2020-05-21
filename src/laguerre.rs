@@ -1,15 +1,3 @@
-use num_integer::Integer;
-
-/// Calculate r / (a * b), avoiding overflows and fractions.
-///
-/// Assumes that a * b divides r evenly.
-/// Adapted from https://docs.rs/num-integer/0.1.42/src/num_integer/lib.rs.html#1077
-fn divide_product<T: Integer + Clone>(r: T, a: T, b: T) -> T {
-    // See http://blog.plover.com/math/choose-2.html for the idea.
-    let g = num_integer::gcd(r.clone(), b.clone());
-    (r / g.clone()) / (a * (b / g))
-}
-
 pub struct Laguerre {
     n: u64,
     coeffs: Vec<f64>,
