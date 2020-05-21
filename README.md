@@ -35,3 +35,5 @@ These can be found in `render` folder
 ### 430
 ![430](https://github.com/cbeuw/iiiD6/blob/master/render/430.png)
 
+## Prints & posters
+I've uploaded some of the renders on Redbubble. They make really pretty posters and clock surfaces! https://www.redbubble.com/people/cbeuw/explore
