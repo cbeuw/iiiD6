@@ -25,7 +25,7 @@ These can be found in `render` folder
 ### 310
 ![310](https://github.com/cbeuw/iiiD6/blob/master/render/310.png)
 ### 320
-![310](https://github.com/cbeuw/iiiD6/blob/master/render/310.png)
+![320](https://github.com/cbeuw/iiiD6/blob/master/render/320.png)
 ### 410
 ![410](https://github.com/cbeuw/iiiD6/blob/master/render/410.png)
 ### 420 🌳
