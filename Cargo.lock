@@ -135,7 +135,6 @@ version = "0.1.0"
 dependencies = [
  "image",
  "num-complex",
- "num-integer",
  "rand",
  "rayon",
  "sphrs",

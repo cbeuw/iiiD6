@@ -47,6 +47,7 @@ impl Orbital {
         }
     }
 
+    #[inline(always)]
     pub fn psi(&self, r: f64, theta: f64, phi: f64) -> Complex64 {
         let rho = r * self.rho_over_r;
         let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, theta, phi);
@@ -62,6 +63,7 @@ impl Orbital {
 
     // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by
     // the volume to get the probability to detect an electron in that region
+    #[inline(always)]
     pub fn probability(&self, r: f64, theta: f64, phi: f64, delta_volume: f64) -> f64 {
         self.psi(r, theta, phi).norm_sqr() * delta_volume
     }
