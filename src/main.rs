@@ -7,7 +7,6 @@ use std::env;
 
 const IMG_SIZE: usize = 2048;
 const SAMPLING_SIZE: usize = IMG_SIZE * 4;
-const ITERS: u64 = 64_000_000_000;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -30,7 +29,7 @@ fn main() {
         ImageBuffer::<Rgb<u8>, _>::from_raw(SAMPLING_SIZE as u32, SAMPLING_SIZE as u32, container)
             .unwrap();
 
-    let grid = sampler::sample(n, l, m, SAMPLING_SIZE, ITERS);
+    let grid = sampler::sample(n, l, m, SAMPLING_SIZE);
 
     let blue = Rgb([83, 202, 236]);
     let black = Rgb([0, 0, 0]);
