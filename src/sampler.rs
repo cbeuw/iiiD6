@@ -97,7 +97,7 @@ fn discover_r_bound_and_iter(
     let mut col_avg_sorted = col_avg.clone();
     col_avg_sorted.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
 
-    let limit =  (grid_size / 10) as usize;
+    let limit =  (grid_size / 8) as usize;
     let row_top_sum:f64 = row_avg_sorted[..limit].iter().sum();
     let col_top_sum:f64 = col_avg_sorted[..limit].iter().sum();
     let top_avg = (row_top_sum + col_top_sum) / ((limit *2) as f64);
