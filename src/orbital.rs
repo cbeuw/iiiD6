@@ -1,7 +1,6 @@
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
 use sphrs::{ComplexSHType, Coordinates, SHEval};
-use std::f64::consts;
 
 const REDUCED_BOHR_RADIUS: f64 = 5.294651e-11;
 
@@ -54,7 +53,7 @@ impl Orbital {
 
         Complex64::new(
             self.root_term
-                * consts::E.powf(-rho / 2.0)
+                * (-rho / 2.0).exp()
                 * rho.powi(self.l as i32)
                 * self.laguerre.L(rho),
             0.0,
