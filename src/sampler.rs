@@ -132,7 +132,7 @@ fn discover_r_bound_and_iter(
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
         let z = ((grid_size - 1) / 2 - row as isize) as f64 * norm_factor;
-        row_bound = spherical(0.0, 0.0, z).0;
+        row_bound = z.abs();
     } else {
         return Err("Max R bound is too small");
     }
@@ -143,7 +143,7 @@ fn discover_r_bound_and_iter(
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
         let x = (col as isize - (grid_size - 1) / 2) as f64 * norm_factor;
-        col_bound = spherical(x, 0.0, 0.0).0;
+        col_bound = x.abs();
     } else {
         return Err("Max R bound is too small");
     }
@@ -151,12 +151,4 @@ fn discover_r_bound_and_iter(
     // Some of the orbitals are wider, some of them are taller. We need to fit according to the
     // longest axis
     Ok((f64::max(row_bound, col_bound), sample_amount))
-}
-
-fn spherical(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-    let r = (x * x + y * y + z * z).sqrt();
-    let theta = if r == 0.0 { 0.0 } else { (z / r).acos() };
-    let phi = if x == 0.0 { 0.0 } else { (y / x).acos() };
-
-    (r, theta, phi)
 }
