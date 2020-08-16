@@ -1,8 +1,16 @@
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
-use sphrs::{ComplexSHType, Coordinates, SHEval};
+use sphrs::{ComplexSHType, Coordinates, RealSHType, SHCoordinates, SHEval};
+use std::f64::consts::{FRAC_PI_2, SQRT_2};
 
 const REDUCED_BOHR_RADIUS: f64 = 5.294651e-11;
+
+#[derive(Copy, Clone, Debug)]
+pub enum Phase {
+    Positive,
+    Zero,
+    Negative,
+}
 
 pub struct Orbital {
     n: u64,
@@ -47,23 +55,46 @@ impl Orbital {
     }
 
     #[inline(always)]
-    pub fn psi(&self, r: f64, theta: f64, phi: f64) -> Complex64 {
-        let rho = r * self.rho_over_r;
-        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, theta, phi);
+    pub fn psi(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
+        let rho = coord.r() * self.rho_over_r;
+        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
 
-        Complex64::new(
-            self.root_term
-                * (-rho / 2.0).exp()
-                * rho.powi(self.l as i32)
-                * self.laguerre.L(rho),
-            0.0,
-        ) * ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere)
+        let radial =
+            self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
+
+        let c_sph_harm = ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere);
+        //let r_sph_harm: f64 = RealSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere);
+
+        let sign = if self.m % 2 == 0 { 1. } else { -1. };
+        let r_sph_harm = if self.m < 0 {
+            sign * SQRT_2
+                * ComplexSHType::Spherical
+                    .eval(self.l as i64, -self.m as i64, &unit_sphere)
+                    .im
+        } else if self.m == 0 {
+            c_sph_harm.re
+        } else {
+            sign * SQRT_2 * c_sph_harm.re
+        };
+
+        let phase = if radial * r_sph_harm > 0.0 {
+            Phase::Positive
+        } else if radial * r_sph_harm == 0.0 {
+            Phase::Zero
+        } else {
+            Phase::Negative
+        };
+
+        (radial * c_sph_harm, phase)
     }
 
     // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by
     // the volume to get the probability to detect an electron in that region
     #[inline(always)]
-    pub fn probability(&self, r: f64, theta: f64, phi: f64, delta_volume: f64) -> f64 {
-        self.psi(r, theta, phi).norm_sqr() * delta_volume
+    pub fn probability(&self, coord: Coordinates<f64>, delta_volume: f64) -> (Phase, f64) {
+        let (psi_val, phase) = self.psi(coord);
+
+        let prob = psi_val.norm_sqr() * delta_volume;
+        (phase, if !prob.is_nan() { prob } else { 0. })
     }
 }

@@ -1,12 +1,14 @@
-use crate::orbital::Orbital;
+use crate::orbital::{Orbital, Phase};
 
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 
-const ZERO_PHI_PLANE: f64 = 0.0;
+use sphrs::Coordinates;
 
-pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<bool>> {
+const ZERO_Y_PLANE: f64 = 0.0;
+
+pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
     let orbital = Orbital::new(n, l, m);
     let grid_isize = grid_size as isize;
 
@@ -21,23 +23,25 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<bool>> {
     // with the normalisation factor
     let norm_factor = r_bound as f64 / (grid_size as f64 / 2.0 - 1.0);
 
-    let mut grid = vec![vec![false; grid_size]; grid_size];
+    let mut grid = vec![vec![Phase::Zero; grid_size]; grid_size];
     grid.par_iter_mut().enumerate().for_each(|(i, row)| {
         let mut rng = SmallRng::from_entropy();
         let z = ((grid_isize - 1) / 2 - i as isize) as f64 * norm_factor;
-        row.iter_mut().enumerate().for_each(|(j, hit)| {
+        row.iter_mut().enumerate().for_each(|(j, cell)| {
             let x = (j as isize - (grid_isize - 1) / 2) as f64 * norm_factor;
 
-            let (r, theta, _) = spherical(x, 0.0, z);
+            let coord = Coordinates::cartesian(x,ZERO_Y_PLANE, z);
 
-            let mut p = orbital.probability(r, theta, ZERO_PHI_PLANE, delta_volume);
+            let (phase, mut p) = orbital.probability(coord, delta_volume);
 
             // This calculates the probability at this point after sample_amount of sampling,
             // so later on in sample() we can sample each pixel only once, rather than
             // actually sampling sample_amount of them, which is very large.
             p = 1.0 - (1.0 - p).powf(sample_amount as f64);
 
-            *hit = rng.gen_bool(p);
+            if rng.gen_bool(p) {
+                *cell = phase;
+            }
         });
     });
     grid
@@ -57,7 +61,7 @@ fn discover_r_bound_and_iter(
     // and columns to be AVG_PROB_AT_MAX_RUN
     const AVG_PROB_AT_MAX_RUN: f64 = 0.999;
 
-    // We want to find an r_bound such that 
+    // We want to find an r_bound such that
     // the minimum of (average probability at each row, average probability at each column)
     // is greater than PROB_THRESHOLD
     const PROB_THRESHOLD: f64 = 0.08;
@@ -74,9 +78,11 @@ fn discover_r_bound_and_iter(
         // jth column
         row_probs.iter_mut().enumerate().for_each(|(j, prob)| {
             let x = (j as isize - (grid_size - 1) / 2) as f64 * norm_factor;
-            let (r, theta, _) = spherical(x, 0.0, z);
 
-            *prob = orbital.probability(r, theta, ZERO_PHI_PLANE, delta_volume);
+            let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
+
+            let (_, p) = orbital.probability(coord, delta_volume);
+            *prob = p;
         });
     });
 
@@ -85,28 +91,35 @@ fn discover_r_bound_and_iter(
         .fold(Vec::new(), |mut acc: Vec<f64>, row: &Vec<f64>| {
             acc.push(row.into_iter().sum());
             acc
-        }).iter().map(|&x| x / grid_size as f64).collect();
+        })
+        .iter()
+        .map(|&x| x / grid_size as f64)
+        .collect();
 
-    let col_avg: Vec<f64> = probs.iter().fold(probs[0].clone(), |acc, row| {
-        let zipped = acc.into_iter().zip(row);
-        zipped.map(|(a, b)| a + b).collect()
-    }).iter().map(|&x| x / grid_size as f64).collect();
+    let col_avg: Vec<f64> = probs
+        .iter()
+        .fold(probs[0].clone(), |acc, row| {
+            let zipped = acc.into_iter().zip(row);
+            zipped.map(|(a, b)| a + b).collect()
+        })
+        .iter()
+        .map(|&x| x / grid_size as f64)
+        .collect();
 
     let mut row_avg_sorted = row_avg.clone();
     row_avg_sorted.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     let mut col_avg_sorted = col_avg.clone();
     col_avg_sorted.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
 
-    let limit =  (grid_size / 8) as usize;
-    let row_top_sum:f64 = row_avg_sorted[..limit].iter().sum();
-    let col_top_sum:f64 = col_avg_sorted[..limit].iter().sum();
-    let top_avg = (row_top_sum + col_top_sum) / ((limit *2) as f64);
+    let limit = (grid_size / 8) as usize;
+    let row_top_sum: f64 = row_avg_sorted[..limit].iter().sum();
+    let col_top_sum: f64 = col_avg_sorted[..limit].iter().sum();
+    let top_avg = (row_top_sum + col_top_sum) / ((limit * 2) as f64);
 
     // 1-(1-top_avg) ^ (sample_amount) = AVG_PROB_AT_MAX_RUN
     // Solve for sample_amount, get sample_amount = ln(1-top_avg) / ln(1-AVG_PROB_AT_MAX_RUN)
-    // which is log base (1-top_avg) of (1-AVG_PROB_AT_MAX_RUN) 
-    let sample_amount:u64 = (1.0-AVG_PROB_AT_MAX_RUN).log(1.0-top_avg).round() as u64;
-
+    // which is log base (1-top_avg) of (1-AVG_PROB_AT_MAX_RUN)
+    let sample_amount: u64 = (1.0 - AVG_PROB_AT_MAX_RUN).log(1.0 - top_avg).round() as u64;
 
     // At the current R_BOUND_MAX scale, the edges have a very low probability. We progress
     // from the edges to the centre to find the first row and column such that the average
@@ -116,7 +129,7 @@ fn discover_r_bound_and_iter(
     if let Some((row, _)) = row_avg
         .iter()
         .enumerate()
-        .find(|&(_, prob)| 1.0-(1.0-prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
+        .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
         let z = ((grid_size - 1) / 2 - row as isize) as f64 * norm_factor;
         row_bound = spherical(0.0, 0.0, z).0;
@@ -127,7 +140,7 @@ fn discover_r_bound_and_iter(
     if let Some((col, _)) = col_avg
         .iter()
         .enumerate()
-        .find(|&(_, prob)| 1.0-(1.0-prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
+        .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
         let x = (col as isize - (grid_size - 1) / 2) as f64 * norm_factor;
         col_bound = spherical(x, 0.0, 0.0).0;

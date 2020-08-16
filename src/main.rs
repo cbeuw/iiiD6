@@ -33,12 +33,13 @@ fn main() {
 
     let blue = Rgb([83, 202, 236]);
     let black = Rgb([0, 0, 0]);
+    let red = Rgb([236, 91, 83]);
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
-        if grid[y as usize][x as usize] {
-            *pixel = blue;
-        } else {
-            *pixel = black;
+        match grid[y as usize][x as usize] {
+            orbital::Phase::Positive => *pixel = blue,
+            orbital::Phase::Negative => *pixel = red,
+            orbital::Phase::Zero => *pixel = black,
         }
     }
 
