@@ -30,7 +30,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
         row.iter_mut().enumerate().for_each(|(j, cell)| {
             let x = (j as isize - (grid_isize - 1) / 2) as f64 * norm_factor;
 
-            let coord = Coordinates::cartesian(x,ZERO_Y_PLANE, z);
+            let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
             let (phase, mut p) = orbital.probability(coord, delta_volume);
 

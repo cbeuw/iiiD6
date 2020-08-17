@@ -1,7 +1,7 @@
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
-use sphrs::{ComplexSHType, Coordinates, RealSHType, SHCoordinates, SHEval};
-use std::f64::consts::{FRAC_PI_2, SQRT_2};
+use sphrs::{ComplexSHType, Coordinates, SHCoordinates, SHEval};
+use std::f64::consts::SQRT_2;
 
 const REDUCED_BOHR_RADIUS: f64 = 5.294651e-11;
 
