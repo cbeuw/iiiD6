@@ -15,8 +15,7 @@ n >= 1
 0 <= l <= n-1
 -l <= m <= l
 ```
-Although the scaling currenlty doesn't work very well for large n (>4), so `ITERS` in `main.rs` and `R_BOUND_MAX` in `sampler.rs` may
-need to be adjusted manually.
+Although the scaling currenlty doesn't work very well for large n (>4), so `R_BOUND_MAX` in `sampler.rs` may need to be adjusted manually.
 
 ## Renders
 These can be found in `render` folder
