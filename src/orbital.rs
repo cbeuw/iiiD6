@@ -56,25 +56,31 @@ impl Orbital {
 
     #[inline(always)]
     pub fn psi(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
+        // psi(r, theta, phi) = R(r)Y_(m, l)(theta, phi)
+        // where R(r) is the real radial component, and Y_(m, l)(theta, phi) is the complex spherical harmonic
         let rho = coord.r() * self.rho_over_r;
         let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
-
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-
         let c_sph_harm = ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere);
-        //let r_sph_harm: f64 = RealSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere);
+        let psi = radial * c_sph_harm;
 
-        let sign = if self.m % 2 == 0 { 1. } else { -1. };
+        // Phase calculation
+        // This is the sign of R(r)Y_(m, l)(theta, phi), but Y_(m, l) is in its real form
+        // (since we can't take the sign) of a the complex number psi
+
+        // We use the Condon-Shortley phase convention for our definition of Y
+        let condon_shortley_sign = if self.m % 2 == 0 { 1. } else { -1. };
         let r_sph_harm = if self.m < 0 {
-            sign * SQRT_2
+            condon_shortley_sign
+                * SQRT_2
                 * ComplexSHType::Spherical
                     .eval(self.l as i64, -self.m as i64, &unit_sphere)
                     .im
         } else if self.m == 0 {
             c_sph_harm.re
         } else {
-            sign * SQRT_2 * c_sph_harm.re
+            condon_shortley_sign * SQRT_2 * c_sph_harm.re
         };
 
         let phase = if radial * r_sph_harm > 0.0 {
@@ -85,7 +91,7 @@ impl Orbital {
             Phase::Negative
         };
 
-        (radial * c_sph_harm, phase)
+        (psi, phase)
     }
 
     // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by

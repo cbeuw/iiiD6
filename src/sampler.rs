@@ -63,12 +63,14 @@ fn discover_r_bound_and_iter(
 
     // We want to find an r_bound such that
     // the minimum of (average probability at each row, average probability at each column)
-    // is greater than PROB_THRESHOLD
+    // after iter_amount of samplings greater than PROB_THRESHOLD
     const PROB_THRESHOLD: f64 = 0.08;
 
     // We start as if the edges represent R_BOUND_MAX, which is very zoomed out.
     // We then calculate the average probability at each row and column.
     let delta_volume = (R_BOUND_MAX / (grid_size as f64 / 2.0 - 1.0)).powi(3);
+    // norm_factor is multiplied onto x and z coordinates of the grid such that the result
+    // at the edges equal to R_BOUND_MAX metre
     let norm_factor = R_BOUND_MAX as f64 / (grid_size as f64 / 2.0 - 1.0);
 
     let mut probs = vec![vec![0.0; grid_size as usize]; grid_size as usize];
@@ -86,6 +88,7 @@ fn discover_r_bound_and_iter(
         });
     });
 
+    // Here we calculate the average single-sample probability at each row and each column
     let row_avg: Vec<f64> = probs
         .iter()
         .fold(Vec::new(), |mut acc: Vec<f64>, row: &Vec<f64>| {
@@ -106,6 +109,7 @@ fn discover_r_bound_and_iter(
         .map(|&x| x / grid_size as f64)
         .collect();
 
+    // We then calculate the average probabilites of top grid_size/8 rows and columns
     let mut row_avg_sorted = row_avg.clone();
     row_avg_sorted.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
     let mut col_avg_sorted = col_avg.clone();
@@ -121,6 +125,9 @@ fn discover_r_bound_and_iter(
     // which is log base (1-top_avg) of (1-AVG_PROB_AT_MAX_RUN)
     let sample_amount: u64 = (1.0 - AVG_PROB_AT_MAX_RUN).log(1.0 - top_avg).round() as u64;
 
+    // Now we know how many iterations we want to sample, we can then work out where the edges of
+    // our grid should be
+    //
     // At the current R_BOUND_MAX scale, the edges have a very low probability. We progress
     // from the edges to the centre to find the first row and column such that the average
     // probability is greater than PROB_THRESHOLD
