@@ -57,7 +57,7 @@ fn discover_r_bound_and_iter(
     const R_BOUND_MAX: f64 = 40e-10; // 40 angstrom
 
     // We want to determine the amount of "iterations" we sample the entire grid.
-    // We want, at this amount of iterations, the average probability at top 10% of rows
+    // We want, at this amount of iterations, the average probability at top 12.5% of rows
     // and columns to be AVG_PROB_AT_MAX_RUN
     const AVG_PROB_AT_MAX_RUN: f64 = 0.999;
 
@@ -138,10 +138,13 @@ fn discover_r_bound_and_iter(
         .enumerate()
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
+        if row == grid_size as usize || row == 0 {
+            println!("Max R bound is too small: row limit at {}", row)
+        }
         let z = ((grid_size - 1) / 2 - row as isize) as f64 * norm_factor;
         row_bound = z.abs();
     } else {
-        return Err("Max R bound is too small");
+        return Err("No row satisfies minimum probability threshold");
     }
 
     if let Some((col, _)) = col_avg
@@ -149,10 +152,13 @@ fn discover_r_bound_and_iter(
         .enumerate()
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
+        if col == grid_size as usize || col == 0 {
+            println!("Max R bound is too small: row limit at {}", col)
+        }
         let x = (col as isize - (grid_size - 1) / 2) as f64 * norm_factor;
         col_bound = x.abs();
     } else {
-        return Err("Max R bound is too small");
+        return Err("No column satisfies minimum probability threshold");
     }
 
     // Some of the orbitals are wider, some of them are taller. We need to fit according to the
