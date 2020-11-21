@@ -3,7 +3,6 @@ use crate::orbital::{Orbital, Phase};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-
 use sphrs::Coordinates;
 
 const ZERO_Y_PLANE: f64 = 0.0;
@@ -32,7 +31,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
 
             let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
-            let (phase, mut p) = orbital.probability(coord, delta_volume);
+            let (mut p, phase) = orbital.probability_with_phase(coord, delta_volume);
 
             // This calculates the probability at this point after sample_amount of sampling,
             // so later on in sample() we can sample each pixel only once, rather than
@@ -83,7 +82,7 @@ fn discover_r_bound_and_iter(
 
             let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
-            let (_, p) = orbital.probability(coord, delta_volume);
+            let p = orbital.probability(coord, delta_volume);
             *prob = p;
         });
     });

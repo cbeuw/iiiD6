@@ -54,17 +54,16 @@ impl Orbital {
         }
     }
 
-    #[inline(always)]
-    pub fn psi(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
-        // psi(r, theta, phi) = R(r)Y_(m, l)(theta, phi)
-        // where R(r) is the real radial component, and Y_(m, l)(theta, phi) is the complex spherical harmonic
-        let rho = coord.r() * self.rho_over_r;
-        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
-        let radial =
-            self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let c_sph_harm = ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, &unit_sphere);
-        let psi = radial * c_sph_harm;
+    fn cplx_sph_harmonics(&self, unit_sphere: &Coordinates<f64>) -> Complex64 {
+        ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, unit_sphere)
+    }
 
+    fn phase(
+        &self,
+        sph_harmonics: Complex64,
+        radial: f64,
+        unit_sphere: &Coordinates<f64>,
+    ) -> Phase {
         // Phase calculation
         // This is the sign of R(r)Y_(m, l)(theta, phi), but Y_(m, l) is in its real form
         // (since we can't take the sign) of a the complex number psi
@@ -75,32 +74,74 @@ impl Orbital {
             condon_shortley_sign
                 * SQRT_2
                 * ComplexSHType::Spherical
-                    .eval(self.l as i64, -self.m as i64, &unit_sphere)
+                    .eval(self.l as i64, -self.m as i64, unit_sphere)
                     .im
         } else if self.m == 0 {
-            c_sph_harm.re
+            sph_harmonics.re
         } else {
-            condon_shortley_sign * SQRT_2 * c_sph_harm.re
+            condon_shortley_sign * SQRT_2 * sph_harmonics.re
         };
 
-        let phase = if radial * r_sph_harm > 0.0 {
+        if radial * r_sph_harm > 0.0 {
             Phase::Positive
         } else if radial * r_sph_harm == 0.0 {
             Phase::Zero
         } else {
             Phase::Negative
-        };
+        }
+    }
+
+    #[inline(always)]
+    fn psi_with_phase(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
+        let rho = coord.r() * self.rho_over_r;
+        let radial =
+            self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
+        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
+        let sph_harmonics = self.cplx_sph_harmonics(&unit_sphere);
+
+        let psi = radial * sph_harmonics;
+
+        let phase = self.phase(sph_harmonics, radial, &unit_sphere);
 
         (psi, phase)
+    }
+
+    #[inline(always)]
+    fn psi(&self, coord: Coordinates<f64>) -> Complex64 {
+        // psi(r, theta, phi) = R(r)Y_(m, l)(theta, phi)
+        // where R(r) is the real radial component, and Y_(m, l)(theta, phi) is the complex spherical harmonic
+        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
+        let rho = coord.r() * self.rho_over_r;
+        let radial =
+            self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
+        let psi = radial * self.cplx_sph_harmonics(&unit_sphere);
+
+        psi
+    }
+
+    #[inline(always)]
+    pub fn probability_with_phase(
+        &self,
+        coord: Coordinates<f64>,
+        delta_volume: f64,
+    ) -> (f64, Phase) {
+        let (psi_val, phase) = self.psi_with_phase(coord);
+
+        let prob = psi_val.norm_sqr() * delta_volume;
+        (if !prob.is_nan() { prob } else { 0. }, phase)
     }
 
     // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by
     // the volume to get the probability to detect an electron in that region
     #[inline(always)]
-    pub fn probability(&self, coord: Coordinates<f64>, delta_volume: f64) -> (Phase, f64) {
-        let (psi_val, phase) = self.psi(coord);
+    pub fn probability(&self, coord: Coordinates<f64>, delta_volume: f64) -> f64 {
+        let psi_val = self.psi(coord);
 
         let prob = psi_val.norm_sqr() * delta_volume;
-        (phase, if !prob.is_nan() { prob } else { 0. })
+        if !prob.is_nan() {
+            prob
+        } else {
+            0.
+        }
     }
 }
