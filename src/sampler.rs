@@ -53,7 +53,11 @@ fn discover_r_bound_and_iter(
     grid_size: isize,
     orbital: &Orbital,
 ) -> Result<(f64, u64), &'static str> {
-    const R_BOUND_MAX: f64 = 40e-10; // 40 angstrom
+    // Predicted r bound using an empirical quadratic regression
+    let pred_r_bound: f64 = 1.0446e-10 * (orbital.n() * orbital.n()) as f64
+        + 1.7629e-10 * orbital.n() as f64
+        - 7.5457e-12;
+    let r_bound_max = pred_r_bound * 2.;
 
     // We want to determine the amount of "iterations" we sample the entire grid.
     // We want, at this amount of iterations, the average probability at top 12.5% of rows
@@ -65,12 +69,12 @@ fn discover_r_bound_and_iter(
     // after iter_amount of samplings greater than PROB_THRESHOLD
     const PROB_THRESHOLD: f64 = 0.08;
 
-    // We start as if the edges represent R_BOUND_MAX, which is very zoomed out.
+    // We start as if the edges represent r_bound_max, which is very zoomed out.
     // We then calculate the average probability at each row and column.
-    let delta_volume = (R_BOUND_MAX / (grid_size as f64 / 2.0 - 1.0)).powi(3);
+    let delta_volume = (r_bound_max / (grid_size as f64 / 2.0 - 1.0)).powi(3);
     // norm_factor is multiplied onto x and z coordinates of the grid such that the result
-    // at the edges equal to R_BOUND_MAX metre
-    let norm_factor = R_BOUND_MAX as f64 / (grid_size as f64 / 2.0 - 1.0);
+    // at the edges equal to r_bound_max metre
+    let norm_factor = r_bound_max as f64 / (grid_size as f64 / 2.0 - 1.0);
 
     let mut probs = vec![vec![0.0; grid_size as usize]; grid_size as usize];
     // ith row

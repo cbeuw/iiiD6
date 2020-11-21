@@ -54,6 +54,10 @@ impl Orbital {
         }
     }
 
+    pub fn n(&self) -> u64 {
+        self.n
+    }
+
     fn cplx_sph_harmonics(&self, unit_sphere: &Coordinates<f64>) -> Complex64 {
         ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, unit_sphere)
     }
