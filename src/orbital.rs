@@ -85,27 +85,27 @@ impl Orbital {
     }
 
     #[inline(always)]
-    fn psi_with_phase(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
+    fn psi_with_phase(&self, coord: &Coordinates<f64>) -> (Complex64, Phase) {
         // let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
         let rho = coord.r() * self.rho_over_r;
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let sph_harmonics = ComplexSHType::Spherical.eval(self.l as i64, self.m, &coord);
+        let sph_harmonics = ComplexSHType::Spherical.eval(self.l as i64, self.m, coord);
         let psi = radial * sph_harmonics;
 
-        let phase = self.phase(sph_harmonics, &coord);
+        let phase = self.phase(sph_harmonics, coord);
 
         (psi, phase)
     }
 
     #[inline(always)]
-    fn psi(&self, coord: Coordinates<f64>) -> Complex64 {
+    fn psi(&self, coord: &Coordinates<f64>) -> Complex64 {
         // psi(r, theta, phi) = R(r)Y_(m, l)(theta, phi)
         // where R(r) is the real radial component, and Y_(m, l)(theta, phi) is the complex spherical harmonic
         let rho = coord.r() * self.rho_over_r;
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let psi = radial * ComplexSHType::Spherical.eval(self.l as i64, self.m, &coord);
+        let psi = radial * ComplexSHType::Spherical.eval(self.l as i64, self.m, coord);
 
         psi
     }
@@ -113,7 +113,7 @@ impl Orbital {
     #[inline(always)]
     pub fn probability_with_phase(
         &self,
-        coord: Coordinates<f64>,
+        coord: &Coordinates<f64>,
         delta_volume: f64,
     ) -> (f64, Phase) {
         let (psi_val, phase) = self.psi_with_phase(coord);
@@ -125,7 +125,7 @@ impl Orbital {
     // |psi(r, theta, phi)|^2 is the probability per unit volume at (r, theta, phi). Multiply it by
     // the volume to get the probability to detect an electron in that region
     #[inline(always)]
-    pub fn probability(&self, coord: Coordinates<f64>, delta_volume: f64) -> f64 {
+    pub fn probability(&self, coord: &Coordinates<f64>, delta_volume: f64) -> f64 {
         let psi_val = self.psi(coord);
 
         let prob = psi_val.norm_sqr() * delta_volume;
