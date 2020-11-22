@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 mod laguerre;
 mod orbital;
 mod sampler;
