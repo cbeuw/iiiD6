@@ -58,14 +58,11 @@ impl Orbital {
         self.n
     }
 
-    fn cplx_sph_harmonics(&self, coord: &Coordinates<f64>) -> Complex64 {
-        ComplexSHType::Spherical.eval(self.l as i64, self.m, coord)
-    }
-
+    #[inline(always)]
     fn phase(&self, sph_harmonics: Complex64, coord: &Coordinates<f64>) -> Phase {
         // Phase calculation
         // This is the sign of R(r)Y_(m, l)(theta, phi), but Y_(m, l) is in its real form
-        // (since we can't take the sign) of a the complex number psi
+        // (since we can't take the sign of a the complex number psi)
 
         // We use the Condon-Shortley phase convention for our definition of Y
         let condon_shortley_sign = if self.m.abs() % 2 == 0 { 1. } else { -1. };
@@ -93,7 +90,7 @@ impl Orbital {
         let rho = coord.r() * self.rho_over_r;
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let sph_harmonics = self.cplx_sph_harmonics(&coord);
+        let sph_harmonics = ComplexSHType::Spherical.eval(self.l as i64, self.m, &coord);
         let psi = radial * sph_harmonics;
 
         let phase = self.phase(sph_harmonics, &coord);
@@ -108,7 +105,7 @@ impl Orbital {
         let rho = coord.r() * self.rho_over_r;
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let psi = radial * self.cplx_sph_harmonics(&coord);
+        let psi = radial * ComplexSHType::Spherical.eval(self.l as i64, self.m, &coord);
 
         psi
     }
