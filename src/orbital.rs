@@ -1,6 +1,6 @@
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
-use sphrs::{ComplexSHType, Coordinates, SHCoordinates, SHEval};
+use sphrs::{ComplexSHType, Coordinates, RealSHType, SHCoordinates, SHEval};
 use std::f64::consts::SQRT_2;
 
 const REDUCED_BOHR_RADIUS: f64 = 5.294651e-11;
@@ -59,7 +59,7 @@ impl Orbital {
     }
 
     fn cplx_sph_harmonics(&self, unit_sphere: &Coordinates<f64>) -> Complex64 {
-        ComplexSHType::Spherical.eval(self.l as i64, self.m as i64, unit_sphere)
+        ComplexSHType::Spherical.eval(self.l as i64, self.m, unit_sphere)
     }
 
     fn phase(
@@ -73,13 +73,10 @@ impl Orbital {
         // (since we can't take the sign) of a the complex number psi
 
         // We use the Condon-Shortley phase convention for our definition of Y
-        let condon_shortley_sign = if self.m % 2 == 0 { 1. } else { -1. };
+        let condon_shortley_sign = if self.m.abs() % 2 == 0 { 1. } else { -1. };
         let r_sph_harm = if self.m < 0 {
-            condon_shortley_sign
-                * SQRT_2
-                * ComplexSHType::Spherical
-                    .eval(self.l as i64, -self.m as i64, unit_sphere)
-                    .im
+            // Since we need to calculate Y_(-m,l) anyway, it's cheaper to calculate the real value directly
+            condon_shortley_sign * RealSHType::Spherical.eval(self.l as i64, self.m, unit_sphere)
         } else if self.m == 0 {
             sph_harmonics.re
         } else {
@@ -97,12 +94,11 @@ impl Orbital {
 
     #[inline(always)]
     fn psi_with_phase(&self, coord: Coordinates<f64>) -> (Complex64, Phase) {
+        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
         let rho = coord.r() * self.rho_over_r;
         let radial =
             self.root_term * (-rho / 2.0).exp() * rho.powi(self.l as i32) * self.laguerre.L(rho);
-        let unit_sphere: Coordinates<f64> = Coordinates::spherical(1.0, coord.theta(), coord.phi());
         let sph_harmonics = self.cplx_sph_harmonics(&unit_sphere);
-
         let psi = radial * sph_harmonics;
 
         let phase = self.phase(sph_harmonics, radial, &unit_sphere);
