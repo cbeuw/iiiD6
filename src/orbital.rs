@@ -83,9 +83,9 @@ impl Orbital {
             condon_shortley_sign * SQRT_2 * sph_harmonics.re
         };
 
-        if radial * r_sph_harm > 0.0 {
+        if r_sph_harm > 0.0 {
             Phase::Positive
-        } else if radial * r_sph_harm == 0.0 {
+        } else if r_sph_harm == 0.0 {
             Phase::Zero
         } else {
             Phase::Negative
