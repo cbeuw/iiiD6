@@ -23,7 +23,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
 
     let mut grid = vec![vec![Phase::Zero; grid_size]; grid_size];
     grid.par_iter_mut().enumerate().for_each(|(i, row)| {
-        let mut rng = SmallRng::from_entropy();
+        let mut rng = SmallRng::seed_from_u64(i as u64);
         let z = ((grid_size as isize - 1) / 2 - i as isize) as f64 * norm_factor;
         row.iter_mut().enumerate().for_each(|(j, cell)| {
             let x = (j as isize - (grid_size as isize - 1) / 2) as f64 * norm_factor;
