@@ -4,6 +4,7 @@ mod orbital;
 mod sampler;
 
 use image::{imageops, FilterType, ImageBuffer, Rgb};
+use sampler::Sampler;
 use std::env;
 
 const IMG_SIZE: usize = 2048;
@@ -25,16 +26,16 @@ fn main() {
         panic!("l must be in range [-l,l]");
     }
 
+    let blue = Rgb([83, 202, 236]);
+    let black = Rgb([0, 0, 0]);
+    let red = Rgb([236, 91, 83]);
+
     let container = vec![0; 3 * SAMPLING_SIZE * SAMPLING_SIZE];
     let mut image =
         ImageBuffer::<Rgb<u8>, _>::from_raw(SAMPLING_SIZE as u32, SAMPLING_SIZE as u32, container)
             .unwrap();
 
-    let grid = sampler::sample(n, l, m, SAMPLING_SIZE);
-
-    let blue = Rgb([83, 202, 236]);
-    let black = Rgb([0, 0, 0]);
-    let red = Rgb([236, 91, 83]);
+    let grid = Sampler::new(n, l, m, SAMPLING_SIZE).sample_xz_plane(0.0);
 
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         match grid[y as usize][x as usize] {
@@ -48,7 +49,7 @@ fn main() {
         &image,
         IMG_SIZE as u32,
         IMG_SIZE as u32,
-        FilterType::Triangle
+        FilterType::Triangle,
     );
     image.save(format!("{}{}{}.png", n, l, m)).unwrap();
 }

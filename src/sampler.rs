@@ -5,43 +5,64 @@ use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 use sphrs::Coordinates;
 
-const ZERO_Y_PLANE: f64 = 0.0;
+pub struct Sampler {
+    orbital: Orbital,
+    grid_size: usize,
+    sample_amount: u64,
 
-pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
-    let orbital = Orbital::new(n, l, m);
-
-    let (r_bound, sample_amount) = discover_r_bound_and_iter(grid_size, &orbital).unwrap();
-
-    // each pixel represents a length in space. we take the volume as a cube with side length of that
-    // this volume is multiplied by |psi(r, theta, phi)|^2 at each point in space to get the probability
-    // at the volume around that point
-    let delta_volume = (r_bound / (grid_size as f64 / 2.0 - 1.0)).powi(3);
-
-    // x and z are currently in range of [-grid_size/2, grid_size/2], we normalise that to [-r_bound, r_bound]
-    // with the normalisation factor
-    let norm_factor = r_bound / (grid_size as f64 / 2.0 - 1.0);
-
-    let mut grid = vec![vec![Phase::Zero; grid_size]; grid_size];
-    grid.par_iter_mut().enumerate().for_each(|(i, row)| {
-        let mut rng = SmallRng::seed_from_u64(i as u64);
-        let z = ((grid_size as isize - 1) / 2 - i as isize) as f64 * norm_factor;
-        row.iter_mut().enumerate().for_each(|(j, cell)| {
-            let x = (j as isize - (grid_size as isize - 1) / 2) as f64 * norm_factor;
-
-            let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
-
-            let (mut p, phase) = orbital.probability_with_phase(&coord, delta_volume);
-
-            // This calculates the probability at this point after sample_amount of sampling
-            p = 1.0 - (1.0 - p).powf(sample_amount as f64);
-
-            if rng.gen_bool(p) {
-                *cell = phase;
-            }
-        });
-    });
-    grid
+    delta_volume: f64,
+    norm_factor: f64,
 }
+
+impl Sampler {
+    pub fn new(n: u64, l: u64, m: i64, grid_size: usize) -> Self {
+        let orbital = Orbital::new(n, l, m);
+
+        let (r_bound, sample_amount) = discover_r_bound_and_iter(grid_size, &orbital).unwrap();
+
+        // each pixel represents a length in space. we take the volume as a cube with side length of that
+        // this volume is multiplied by |psi(r, theta, phi)|^2 at each point in space to get the probability
+        // at the volume around that point
+        let delta_volume = (r_bound / (grid_size as f64 / 2.0 - 1.0)).powi(3);
+
+        // x and z are currently in range of [-grid_size/2, grid_size/2], we normalise that to [-r_bound, r_bound]
+        // with the normalisation factor
+        let norm_factor = r_bound / (grid_size as f64 / 2.0 - 1.0);
+        Sampler {
+            orbital,
+            grid_size,
+            sample_amount,
+            delta_volume,
+            norm_factor,
+        }
+    }
+    pub fn sample_xz_plane(&self, y: f64) -> Vec<Vec<Phase>> {
+        let mut grid = vec![vec![Phase::Zero; self.grid_size]; self.grid_size];
+        grid.par_iter_mut().enumerate().for_each(|(i, row)| {
+            let mut rng = SmallRng::seed_from_u64(i as u64);
+            let z = ((self.grid_size as isize - 1) / 2 - i as isize) as f64 * self.norm_factor;
+            row.iter_mut().enumerate().for_each(|(j, cell)| {
+                let x = (j as isize - (self.grid_size as isize - 1) / 2) as f64 * self.norm_factor;
+
+                let coord = Coordinates::cartesian(x, y, z);
+
+                let (mut p, phase) = self
+                    .orbital
+                    .probability_with_phase(&coord, self.delta_volume);
+
+                // This calculates the probability at this point after sample_amount of sampling
+                p = 1.0 - (1.0 - p).powf(self.sample_amount as f64);
+
+                if rng.gen_bool(p) {
+                    *cell = phase;
+                }
+            });
+        });
+        grid
+    }
+}
+
+const ZERO_Y_PLANE: f64 = 0.0;
 
 // Find the maximum r_bound value so that we can see the entire orbital shape at a reasonable scale.
 // Instead of a zoomed-in sub picture or a lot of empty space. Also finds the appropirate amount of
