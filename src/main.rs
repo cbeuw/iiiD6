@@ -2,6 +2,7 @@
 mod laguerre;
 mod orbital;
 mod sampler;
+mod factorial;
 
 use image::{imageops, FilterType, ImageBuffer, Rgb};
 use sampler::Sampler;

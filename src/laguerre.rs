@@ -1,37 +1,9 @@
+use crate::factorial::fact;
 pub struct Laguerre {
     n: u64,
     coeffs: Vec<f64>,
 }
 
-// all factorials representible in u64, starting from 0!
-const FACTS: [u64; 21] = [
-    1,
-    1,
-    2,
-    6,
-    24,
-    120,
-    720,
-    5040,
-    40320,
-    362880,
-    3628800,
-    39916800,
-    479001600,
-    6227020800,
-    87178291200,
-    1307674368000,
-    20922789888000,
-    355687428096000,
-    6402373705728000,
-    121645100408832000,
-    2432902008176640000,
-];
-
-#[inline(always)]
-fn fact(i: u64) -> u64 {
-    FACTS[i as usize]
-}
 // Generalised Laguerre polynomial
 // https://en.wikipedia.org/wiki/Laguerre_polynomials#Generalized_Laguerre_polynomials
 //

@@ -1,3 +1,4 @@
+use crate::factorial::fact;
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
 use sphrs::{ComplexSHType, Coordinates, RealSHType, SHCoordinates, SHEval};
@@ -25,17 +26,9 @@ pub struct Orbital {
 impl Orbital {
     // wavefunction as given in https://en.wikipedia.org/wiki/Hydrogen_atom#Wavefunction
     pub fn new(n: u64, l: u64, m: i64) -> Self {
-        // precompute all factorials up to n+l (which is the largest factorial we need)
-        let facts: Vec<_> = (0..=n + l)
-            .scan(1, |prod, x| {
-                *prod = *prod * if x == 0 { 1 } else { x };
-                Some(*prod)
-            })
-            .collect();
-
         // some terms do not require any of r, theta or phi, so we precompute them here
-        let root_term = ((8 * facts[(n - l - 1) as usize]) as f64
-            / ((n * n * n * n * 2 * facts[(n + l) as usize]) as f64
+        let root_term = ((8 * fact(n - l - 1)) as f64
+            / ((n * n * n * n * 2 * fact(n + l)) as f64
                 * REDUCED_BOHR_RADIUS
                 * REDUCED_BOHR_RADIUS
                 * REDUCED_BOHR_RADIUS))
