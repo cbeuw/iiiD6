@@ -33,9 +33,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
 
             let (mut p, phase) = orbital.probability_with_phase(&coord, delta_volume);
 
-            // This calculates the probability at this point after sample_amount of sampling,
-            // so later on in sample() we can sample each pixel only once, rather than
-            // actually sampling sample_amount of them, which is very large.
+            // This calculates the probability at this point after sample_amount of sampling
             p = 1.0 - (1.0 - p).powf(sample_amount as f64);
 
             if rng.gen_bool(p) {
@@ -77,19 +75,28 @@ fn discover_r_bound_and_iter(
     let norm_factor = r_bound_max as f64 / (grid_size as f64 / 2.0 - 1.0);
 
     let mut probs = vec![vec![0.0; grid_size as usize]; grid_size as usize];
+    let sample_interval = 2;
     // ith row
-    probs.par_iter_mut().enumerate().for_each(|(i, row_probs)| {
-        let z = ((grid_size - 1) / 2 - i as isize) as f64 * norm_factor;
-        // jth column
-        row_probs.iter_mut().enumerate().for_each(|(j, prob)| {
-            let x = (j as isize - (grid_size - 1) / 2) as f64 * norm_factor;
+    probs
+        .par_iter_mut()
+        .enumerate()
+        .filter(|(x, _)| x % sample_interval == 0)
+        .for_each(|(i, row_probs)| {
+            let z = ((grid_size - 1) / 2 - i as isize) as f64 * norm_factor;
+            // jth column
+            row_probs
+                .iter_mut()
+                .enumerate()
+                .filter(|(x, _)| x % sample_interval == 0)
+                .for_each(|(j, prob)| {
+                    let x = (j as isize - (grid_size - 1) / 2) as f64 * norm_factor;
 
-            let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
+                    let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
-            let p = orbital.probability(&coord, delta_volume);
-            *prob = p;
+                    let p = orbital.probability(&coord, delta_volume);
+                    *prob = p;
+                });
         });
-    });
 
     // Here we calculate the average single-sample probability at each row and each column
     let row_avg: Vec<f64> = probs
@@ -99,7 +106,7 @@ fn discover_r_bound_and_iter(
             acc
         })
         .iter()
-        .map(|&x| x / grid_size as f64)
+        .map(|&x| x / (grid_size / sample_interval as isize) as f64)
         .collect();
 
     let col_avg: Vec<f64> = probs
@@ -109,7 +116,7 @@ fn discover_r_bound_and_iter(
             zipped.map(|(a, b)| a + b).collect()
         })
         .iter()
-        .map(|&x| x / grid_size as f64)
+        .map(|&x| x / (grid_size / sample_interval as isize) as f64)
         .collect();
 
     // We then calculate the average probabilites of top grid_size/8 rows and columns
