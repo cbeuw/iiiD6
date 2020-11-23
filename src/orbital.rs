@@ -59,7 +59,7 @@ impl Orbital {
     }
 
     #[inline(always)]
-    fn phase(&self, sph_harmonics: Complex64, coord: &Coordinates<f64>) -> Phase {
+    fn phase(&self, sph_harmonics: Complex64, radial: f64, coord: &Coordinates<f64>) -> Phase {
         // Phase calculation
         // This is the sign of R(r)Y_(m, l)(theta, phi), but Y_(m, l) is in its real form
         // (since we can't take the sign of a the complex number psi)
@@ -75,9 +75,9 @@ impl Orbital {
             condon_shortley_sign * SQRT_2 * sph_harmonics.re
         };
 
-        if r_sph_harm > 0.0 {
+        if radial * r_sph_harm > 0.0 {
             Phase::Positive
-        } else if r_sph_harm == 0.0 {
+        } else if radial * r_sph_harm == 0.0 {
             Phase::Zero
         } else {
             Phase::Negative
@@ -93,7 +93,7 @@ impl Orbital {
         let sph_harmonics = ComplexSHType::Spherical.eval(self.l as i64, self.m, coord);
         let psi = radial * sph_harmonics;
 
-        let phase = self.phase(sph_harmonics, coord);
+        let phase = self.phase(sph_harmonics, radial, coord);
 
         (psi, phase)
     }
