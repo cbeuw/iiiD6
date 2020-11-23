@@ -48,7 +48,7 @@ fn main() {
         &image,
         IMG_SIZE as u32,
         IMG_SIZE as u32,
-        FilterType::Gaussian,
+        FilterType::Triangle
     );
     image.save(format!("{}{}{}.png", n, l, m)).unwrap();
 }
