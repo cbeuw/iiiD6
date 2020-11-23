@@ -9,9 +9,8 @@ const ZERO_Y_PLANE: f64 = 0.0;
 
 pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
     let orbital = Orbital::new(n, l, m);
-    let grid_isize = grid_size as isize;
 
-    let (r_bound, sample_amount) = discover_r_bound_and_iter(grid_isize, &orbital).unwrap();
+    let (r_bound, sample_amount) = discover_r_bound_and_iter(grid_size, &orbital).unwrap();
 
     // each pixel represents a length in space. we take the volume as a cube with side length of that
     // this volume is multiplied by |psi(r, theta, phi)|^2 at each point in space to get the probability
@@ -20,14 +19,14 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
 
     // x and z are currently in range of [-grid_size/2, grid_size/2], we normalise that to [-r_bound, r_bound]
     // with the normalisation factor
-    let norm_factor = r_bound as f64 / (grid_size as f64 / 2.0 - 1.0);
+    let norm_factor = r_bound / (grid_size as f64 / 2.0 - 1.0);
 
     let mut grid = vec![vec![Phase::Zero; grid_size]; grid_size];
     grid.par_iter_mut().enumerate().for_each(|(i, row)| {
         let mut rng = SmallRng::from_entropy();
-        let z = ((grid_isize - 1) / 2 - i as isize) as f64 * norm_factor;
+        let z = ((grid_size as isize - 1) / 2 - i as isize) as f64 * norm_factor;
         row.iter_mut().enumerate().for_each(|(j, cell)| {
-            let x = (j as isize - (grid_isize - 1) / 2) as f64 * norm_factor;
+            let x = (j as isize - (grid_size as isize - 1) / 2) as f64 * norm_factor;
 
             let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
@@ -48,7 +47,7 @@ pub fn sample(n: u64, l: u64, m: i64, grid_size: usize) -> Vec<Vec<Phase>> {
 // Instead of a zoomed-in sub picture or a lot of empty space. Also finds the appropirate amount of
 // "iterations" so that the regions with the highest probability are the right brightness
 fn discover_r_bound_and_iter(
-    grid_size: isize,
+    grid_size: usize,
     orbital: &Orbital,
 ) -> Result<(f64, u64), &'static str> {
     // Predicted r bound using an empirical quadratic regression
@@ -72,9 +71,9 @@ fn discover_r_bound_and_iter(
     let delta_volume = (r_bound_max / (grid_size as f64 / 2.0 - 1.0)).powi(3);
     // norm_factor is multiplied onto x and z coordinates of the grid such that the result
     // at the edges equal to r_bound_max metre
-    let norm_factor = r_bound_max as f64 / (grid_size as f64 / 2.0 - 1.0);
+    let norm_factor = r_bound_max / (grid_size as f64 / 2.0 - 1.0);
 
-    let mut probs = vec![vec![0.0; grid_size as usize]; grid_size as usize];
+    let mut probs = vec![vec![0.0; grid_size]; grid_size];
     let sample_interval = 2;
     // ith row
     probs
@@ -82,14 +81,14 @@ fn discover_r_bound_and_iter(
         .enumerate()
         .filter(|(x, _)| x % sample_interval == 0)
         .for_each(|(i, row_probs)| {
-            let z = ((grid_size - 1) / 2 - i as isize) as f64 * norm_factor;
+            let z = ((grid_size as isize - 1) / 2 - i as isize) as f64 * norm_factor;
             // jth column
             row_probs
                 .iter_mut()
                 .enumerate()
                 .filter(|(x, _)| x % sample_interval == 0)
                 .for_each(|(j, prob)| {
-                    let x = (j as isize - (grid_size - 1) / 2) as f64 * norm_factor;
+                    let x = (j as isize - (grid_size as isize - 1) / 2) as f64 * norm_factor;
 
                     let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
@@ -106,7 +105,7 @@ fn discover_r_bound_and_iter(
             acc
         })
         .iter()
-        .map(|&x| x / (grid_size / sample_interval as isize) as f64)
+        .map(|&x| x / (grid_size as isize / sample_interval as isize) as f64)
         .collect();
 
     let col_avg: Vec<f64> = probs
@@ -116,7 +115,7 @@ fn discover_r_bound_and_iter(
             zipped.map(|(a, b)| a + b).collect()
         })
         .iter()
-        .map(|&x| x / (grid_size / sample_interval as isize) as f64)
+        .map(|&x| x / (grid_size as isize / sample_interval as isize) as f64)
         .collect();
 
     // We then calculate the average probabilites of top grid_size/8 rows and columns
@@ -125,7 +124,7 @@ fn discover_r_bound_and_iter(
     let mut col_avg_sorted = col_avg.clone();
     col_avg_sorted.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
 
-    let limit = (grid_size / 8) as usize;
+    let limit = grid_size / 8;
     let row_top_sum: f64 = row_avg_sorted[..limit].iter().sum();
     let col_top_sum: f64 = col_avg_sorted[..limit].iter().sum();
     let top_avg = (row_top_sum + col_top_sum) / ((limit * 2) as f64);
@@ -148,10 +147,10 @@ fn discover_r_bound_and_iter(
         .enumerate()
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
-        if row == grid_size as usize || row == 0 {
+        if row == grid_size || row == 0 {
             println!("Max R bound is too small: row limit at {}", row)
         }
-        let z = ((grid_size - 1) / 2 - row as isize) as f64 * norm_factor;
+        let z = ((grid_size as isize - 1) / 2 - row as isize) as f64 * norm_factor;
         row_bound = z.abs();
     } else {
         return Err("No row satisfies minimum probability threshold");
@@ -162,10 +161,10 @@ fn discover_r_bound_and_iter(
         .enumerate()
         .find(|&(_, prob)| 1.0 - (1.0 - prob).powf(sample_amount as f64) >= PROB_THRESHOLD)
     {
-        if col == grid_size as usize || col == 0 {
+        if col == grid_size || col == 0 {
             println!("Max R bound is too small: row limit at {}", col)
         }
-        let x = (col as isize - (grid_size - 1) / 2) as f64 * norm_factor;
+        let x = (col as isize - (grid_size as isize - 1) / 2) as f64 * norm_factor;
         col_bound = x.abs();
     } else {
         return Err("No column satisfies minimum probability threshold");
