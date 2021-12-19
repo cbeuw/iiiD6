@@ -9,13 +9,13 @@ pub struct Laguerre {
 //
 // Calculated using the closed summation form
 impl Laguerre {
-    pub fn new(n: u64, alpha: u64) -> Self {
+    pub fn new(n: u64, α: u64) -> Self {
         // precompute the coefficient terms ((n + alpha) Choose (n - i)) / i!
         // TODO: divide_product may be better? But this is not a hot spot
         let coeffs: Vec<f64> = (0..=n)
             .rev()
             .map(|j| {
-                (fact(n + alpha) / (fact(j) * fact(alpha + (n - j)))) as f64 / fact(n - j) as f64
+                (fact(n + α) / (fact(j) * fact(α + (n - j)))) as f64 / fact(n - j) as f64
             })
             .collect();
 

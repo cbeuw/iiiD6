@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![allow(confusable_idents)]
 mod laguerre;
 mod orbital;
 mod sampler;

@@ -10,7 +10,7 @@ pub struct Sampler {
     grid_size: usize,
     sample_amount: u64,
 
-    delta_volume: f64,
+    cell_volume: f64,
     norm_factor: f64,
 }
 
@@ -23,7 +23,7 @@ impl Sampler {
         // each pixel represents a length in space. we take the volume as a cube with side length of that
         // this volume is multiplied by |psi(r, theta, phi)|^2 at each point in space to get the probability
         // at the volume around that point
-        let delta_volume = (r_bound / (grid_size as f64 / 2.0 - 1.0)).powi(3);
+        let cell_volume = (r_bound / (grid_size as f64 / 2.0 - 1.0)).powi(3);
 
         // x and z are currently in range of [-grid_size/2, grid_size/2], we normalise that to [-r_bound, r_bound]
         // with the normalisation factor
@@ -32,7 +32,7 @@ impl Sampler {
             orbital,
             grid_size,
             sample_amount,
-            delta_volume,
+            cell_volume,
             norm_factor,
         }
     }
@@ -48,7 +48,7 @@ impl Sampler {
 
                 let (mut p, phase) = self
                     .orbital
-                    .probability_with_phase(&coord, self.delta_volume);
+                    .probability_with_phase(&coord, self.cell_volume);
 
                 // This calculates the probability at this point after sample_amount of sampling
                 p = 1.0 - (1.0 - p).powf(self.sample_amount as f64);
@@ -89,7 +89,7 @@ fn discover_r_bound_and_iter(
 
     // We start as if the edges represent r_bound_max, which is very zoomed out.
     // We then calculate the average probability at each row and column.
-    let delta_volume = (r_bound_max / (grid_size as f64 / 2.0 - 1.0)).powi(3);
+    let cell_volume = (r_bound_max / (grid_size as f64 / 2.0 - 1.0)).powi(3);
     // norm_factor is multiplied onto x and z coordinates of the grid such that the result
     // at the edges equal to r_bound_max metre
     let norm_factor = r_bound_max / (grid_size as f64 / 2.0 - 1.0);
@@ -113,7 +113,7 @@ fn discover_r_bound_and_iter(
 
                     let coord = Coordinates::cartesian(x, ZERO_Y_PLANE, z);
 
-                    let p = orbital.probability(&coord, delta_volume);
+                    let p = orbital.probability(&coord, cell_volume);
                     *prob = p;
                 });
         });
