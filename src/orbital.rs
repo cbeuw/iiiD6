@@ -1,7 +1,7 @@
 use crate::factorial::fact;
 use crate::laguerre::Laguerre;
 use num_complex::Complex64;
-use sphrs::{ComplexSHType, Coordinates, RealSHType, SHCoordinates, SHEval};
+use sphrs::{ComplexSH, Coordinates, RealSH, SHCoordinates, SHEval};
 use std::f64::consts::SQRT_2;
 
 const REDUCED_BOHR_RADIUS: f64 = 5.294651e-11;
@@ -61,7 +61,7 @@ impl Orbital {
         let condon_shortley_sign = if self.m.abs() % 2 == 0 { 1. } else { -1. };
         let r_sph_harm = if self.m < 0 {
             // Since we need to calculate Y_(-m,l) anyway, it's cheaper to calculate the real value directly
-            condon_shortley_sign * RealSHType::Spherical.eval(self.l as i64, self.m, coord)
+            condon_shortley_sign * RealSH::Spherical.eval(self.l as i64, self.m, coord)
         } else if self.m == 0 {
             sph_harmonics.re
         } else {
@@ -80,9 +80,8 @@ impl Orbital {
     #[inline(always)]
     fn ψ_with_phase(&self, coord: &Coordinates<f64>) -> (Complex64, Phase) {
         let ρ = coord.r() * self.ρ_over_r;
-        let radial =
-            self.root_term * (-ρ / 2.0).exp() * ρ.powi(self.l as i32) * self.laguerre.L(ρ);
-        let sph_harmonics = ComplexSHType::Spherical.eval(self.l as i64, self.m, coord);
+        let radial = self.root_term * (-ρ / 2.0).exp() * ρ.powi(self.l as i32) * self.laguerre.L(ρ);
+        let sph_harmonics = ComplexSH::Spherical.eval(self.l as i64, self.m, coord);
         let ψ = radial * sph_harmonics;
 
         let phase = self.phase(sph_harmonics, radial, coord);
@@ -95,19 +94,14 @@ impl Orbital {
         // psi(r, theta, phi) = R(r)Y_(m, l)(theta, phi)
         // where R(r) is the real radial component, and Y_(m, l)(theta, phi) is the complex spherical harmonic
         let ρ = coord.r() * self.ρ_over_r;
-        let radial =
-            self.root_term * (-ρ / 2.0).exp() * ρ.powi(self.l as i32) * self.laguerre.L(ρ);
-        let ψ = radial * ComplexSHType::Spherical.eval(self.l as i64, self.m, coord);
+        let radial = self.root_term * (-ρ / 2.0).exp() * ρ.powi(self.l as i32) * self.laguerre.L(ρ);
+        let ψ = radial * ComplexSH::Spherical.eval(self.l as i64, self.m, coord);
 
         ψ
     }
 
     #[inline(always)]
-    pub fn probability_with_phase(
-        &self,
-        coord: &Coordinates<f64>,
-        volume: f64,
-    ) -> (f64, Phase) {
+    pub fn probability_with_phase(&self, coord: &Coordinates<f64>, volume: f64) -> (f64, Phase) {
         let (ψ, phase) = self.ψ_with_phase(coord);
 
         let prob = ψ.norm_sqr() * volume;
